@@ -1,74 +1,103 @@
 <template>
-    <div>
+  <div>
     <header>
-      <div class="logo">
-        <img src="./assets/logo.png" alt="GitHub Logo" @mouseover="hover = true" @mouseleave="hover = false">
+      <div class="logo" @mouseover="hover = true" @mouseleave="hover = false">
+        <img src="./assets/logo.png" alt="GitHub Logo">
         <span :class="{ 'bold': hover }">GitHub Profiles</span>
       </div>
+      <button v-if="searched" @click="searched = false">Change Username</button>
     </header>
 
-    <div class="search-box">
-      <input type="text" placeholder="Digite o username do Github" v-model="username" @keyup.enter="searchProjects">
-    </div>
+    <main>
+      <div class="search-container" v-if="!searched">
+        <input type="text" v-model="username" placeholder="Insert a username" @keyup.enter="searchUser">
+      </div>
 
-    <div v-if="user">
-      <img :src="user.avatar_url" alt="Avatar" id="avatar">
-      <h2>{{ user.login }}</h2>
-    </div>
-    
-    <ul v-if="projects.length > 0">
-      <li v-for="project in projects" :key="project.id">
-        <a :href="project.html_url">{{ project.name }}</a>
-      </li>
-    </ul>
-    <div v-if="projects.length === 0 && searched">
-      <p>Nenhum projeto encontrado</p>
-    </div>
+      <div class="result" v-if="searched">
+        <div v-if="user">
+          <div class="profile-container">
+            <img :src="user.avatar_url" alt="Avatar do usuário" class="avatar">
+            <h2 class="name">{{ user.login }}</h2>
+          </div>
+            <h3 @click="$event => listShow = 1">Repositórios {{ repos.length }}</h3>
+            <h3 @click="$event => listShow = 2">Starred {{ starred.length }}</h3>
+          <div>
+
+          </div>
+
+          <div class="list" v-if="listShow == 1">
+            <ul class="repos">
+              <li v-for="repo in repos" :key="repo.id">
+                <div>
+                  <a :href="repo.html_url">{{ repo.name }}</a>
+                  <p>{{ repo.language }} {{ repo.forks }}</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="list" v-if="listShow == 2">
+            <ul class="repo">
+              <li v-for="st in starred" :key="st.id">
+                <a :href="st.html_url">{{ st.name }}</a> - {{ st.language }} ({{ st.forks }} branches)
+              </li>
+            </ul>
+          </div>
+        </div>
+  
+        <div v-else>
+          <p>Nenhum usuário pesquisado ainda</p>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
-<script>
 
+<script>
+import axios from 'axios'
 
 export default {
   data() {
     return {
-      username: "",
+      username: '',
       user: null,
-      projects: [],
-      searched: false
-    };
+      repos: [],
+      starred: [],
+      searched: false,
+      hover: false,
+      listShow: 1,
+    }
   },
-  methods: {
-    async searchProjects() {
-      this.searched = true;
-      const response = await fetch(`https://api.github.com/users/${this.username}/repos`);
-      if (response.status === 404) {
-        this.projects = [];
-        this.user = null;
-        return;
-      }
-      const projects = await response.json();
-      this.projects = projects;
 
-      const userResponse = await fetch(`https://api.github.com/users/${this.username}`);
-      const user = await userResponse.json();
-      this.user = user;
+  methods: {
+    async searchUser() {
+      try {
+        const { data: user } = await axios.get(`https://api.github.com/users/${this.username}`)
+        this.user = user
+        const { data: repos } = await axios.get(user.repos_url)
+        this.repos = repos
+        const { data: starred } = await axios.get(`https://api.github.com/users/${this.username}/starred`)
+        this.starred = starred
+        this.searched = true
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
-};
+}
 </script>
 
 <style>
 *{
   box-sizing: border-box;
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    text-decoration: none;
-    font-family: "Open Sans",Arial,Helvetica;
-    /* font-size: 7px; */
-    font-weight: 400;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+  font-family: "Open Sans",Arial,Helvetica;
+  font-weight: 400;
 }
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -86,6 +115,12 @@ header {
   padding: 10px;
   background-color: #24292e;
   color: white;
+}
+
+.result {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
 }
 
 .logo {
@@ -117,9 +152,7 @@ header h1 {
 .search-container input {
   width: 300px;
   padding: 8px 30px 8px 10px;
-  border: none;
-  border-radius: 20px;
-  background-color: #eef0f1;
+  border: solid 1px;
 }
 
 .fa-search {
@@ -144,8 +177,29 @@ header h1 {
   padding: 10px;
   cursor: pointer;
 }
+
 .avatar {
   width: 150px;
+  border-radius: 200px;
+}
+
+.user-container {
+  display: flex;
+  align-items: center;
+  margin-top: 50px;
+}
+
+.user-info {
+  text-align: center;
+  margin-right: 50px;
+}
+
+.user-info h2 {
+  margin-bottom: 10px;
+}
+
+.user-repos {
+  margin-left: 50px;
 }
 
 ul {
@@ -156,5 +210,18 @@ ul {
 
 li {
   margin-bottom: 10px;
+  border-bottom: solid 1px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+button {
+  background-color: #24292e;
+  color: #eef0f1;
+  border: solid 3px #eef0f1;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 5px;
 }
 </style>
