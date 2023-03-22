@@ -1,11 +1,11 @@
 <template>
   <div>
     <header>
-      <div class="logo" @mouseover="hover = true" @mouseleave="hover = false">
+      <div class="logo" @mouseover="hover = true" @mouseleave="hover = false" @click="$event => listShow = 0">
         <img src="./assets/logo.png" alt="GitHub Logo">
         <span :class="{ 'bold': hover }">GitHub Profiles</span>
       </div>
-      <button v-if="searched" @click="searched = false">Change Username</button>
+      <button v-if="searched" @click="cleanThePage">Change Username</button>
     </header>
 
     <main>
@@ -14,40 +14,53 @@
       </div>
 
       <div class="result" v-if="searched">
-        <div v-if="user">
-          <div class="profile-container">
-            <img :src="user.avatar_url" alt="Avatar do usuário" class="avatar">
-            <h2 class="name">{{ user.login }}</h2>
-          </div>
-            <h3 @click="$event => listShow = 1">Repositórios {{ repos.length }}</h3>
-            <h3 @click="$event => listShow = 2">Starred {{ starred.length }}</h3>
-          <div>
-
-          </div>
-
-          <div class="list" v-if="listShow == 1">
-            <ul class="repos">
-              <li v-for="repo in repos" :key="repo.id">
-                <div>
-                  <a :href="repo.html_url">{{ repo.name }}</a>
-                  <p>{{ repo.language }} {{ repo.forks }}</p>
+          <div class="profile-container" v-if="user">
+            <div class="avatar-container">
+              <img :src="user.avatar_url" alt="Avatar do usuário" class="avatar">
+              <h2 class="name">{{ user.name }}</h2>
+            </div>
+            <div class="info-container">
+              <div class="listTitle">
+                <div class="listType">
+                  <h3 @click="$event => listShow = 1">Repos</h3>
+                  <div class="count" id="reposCount">
+                    {{ repos.length }}
+                  </div>
                 </div>
-              </li>
-            </ul>
+                <div class="listType">
+                  <h3 @click="$event => listShow = 2">Starred</h3>
+                  <div class="count" id="starredCount">
+                    {{ starred.length }}
+                  </div>
+                </div>
+              </div>
+              <div class="list" v-if="listShow == 1">
+                <ul class="repos">
+                  <li v-for="repo in repos" :key="repo.id">
+                    <div>
+                      <a :href="repo.html_url">{{ repo.name }}</a>
+                      <p>{{ repo.language }} {{ repo.forks }}</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="list" v-if="listShow == 2">
+                <ul class="repo">
+                  <li v-for="st in starred" :key="st.id">
+                    <div>
+                      <a :href="st.html_url">{{ st.name }}</a>
+                      <p>{{ st.language }} {{ st.forks }}</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
-
-          <div class="list" v-if="listShow == 2">
-            <ul class="repo">
-              <li v-for="st in starred" :key="st.id">
-                <a :href="st.html_url">{{ st.name }}</a> - {{ st.language }} ({{ st.forks }} branches)
-              </li>
-            </ul>
-          </div>
-        </div>
-  
         <div v-else>
           <p>Nenhum usuário pesquisado ainda</p>
         </div>
+
+
       </div>
     </main>
   </div>
@@ -79,9 +92,15 @@ export default {
         const { data: starred } = await axios.get(`https://api.github.com/users/${this.username}/starred`)
         this.starred = starred
         this.searched = true
+        this.listShow = 1
       } catch (err) {
         console.error(err)
       }
+    },
+    cleanThePage() {
+      this.searched = false;
+      this.user = null;
+      this.username = '';
     }
   }
 }
@@ -117,11 +136,6 @@ header {
   color: white;
 }
 
-.result {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-}
 
 .logo {
   display: flex;
@@ -130,7 +144,7 @@ header {
 }
 
 .logo img {
-  width: 50px;
+  width: 75px;
   margin-right: 10px;
 }
 
@@ -149,7 +163,7 @@ header h1 {
   margin-top: 50px;
 }
 
-.search-container input {
+.search-container > input {
   width: 300px;
   padding: 8px 30px 8px 10px;
   border: solid 1px;
@@ -178,8 +192,18 @@ header h1 {
   cursor: pointer;
 }
 
+.result {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.user-info img { 
+  margin-right: 10px; 
+}
+
 .avatar {
-  width: 150px;
+  width: 200px;
   border-radius: 200px;
 }
 
@@ -202,10 +226,18 @@ header h1 {
   margin-left: 50px;
 }
 
+.list {
+  width: 100%;
+  display: flex;
+  justify-content: start;
+  margin-left: 25px;
+}
+
 ul {
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 li {
@@ -213,6 +245,11 @@ li {
   border-bottom: solid 1px;
   display: flex;
   justify-content: flex-start;
+}
+
+a {
+  font-weight: bold;
+  font-size: 24px;
 }
 
 button {
@@ -224,4 +261,53 @@ button {
   font-weight: bold;
   padding: 5px;
 }
+
+.profile-container {
+  width: 100%;
+  margin-top: 25px;
+  display: flex;
+}
+
+.avatar-container {
+  margin-left: 50px ;
+  margin-right: 50px;
+  font-weight: bold;
+}
+
+.info-container {
+  width: 100%;
+}
+
+.listTitle{
+  display: flex;
+  width: 100%;
+  border-bottom: solid 1px;
+  margin-bottom: 20px;
+}
+
+.listType {  
+  padding-left: 30px;
+  padding-right: 30px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.count {
+  position:absolute;
+  border-radius: 20px;
+  background-color: #e3e3e3;
+  padding: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  top: 170px;
+}
+
+#reposCount {
+  left: 410px;
+}
+
+#starredCount {
+  left: 565px;
+}
+
 </style>
